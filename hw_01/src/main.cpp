@@ -5,27 +5,59 @@
 #define BASICS_HEADER_ERROR 13
 #define RATINGS_HEADER_ERROR 14
 
+#define RATING_MIN_VOTES_NUM 1000
+
 #include <iostream>
 #include <cstring>
 #include <fstream>
 #include <vector>
 #include <sstream>
 
-using namespace std;
-
-void stringSplitByTabs(vector<string> &arr, string str)
+struct akas_t
 {
-    istringstream strStream(str);
-    string token;
+    int titleIdIndex = -1;
+    int languageIndex = -1;
+    int regionIndex = -1;
+
+    std::ifstream file;
+};
+
+struct basics_t
+{
+    int tconstIndex;
+    int titleTypeIndex;
+    int isAdultIndex;
+    int runtimeMinutesIndex;
+
+    std::ifstream file;
+};
+
+struct ratings_t
+{
+    int tconstIndex;
+    int averageRatingIndex;
+    int numVotesIndex;
+
+    std::ifstream file;
+};
+
+void stringSplitByTabs(std::vector<std::string> &arr, std::string str)
+{
+    std::istringstream strStream(str);
+    std::string token;
 
     while (getline(strStream, token, '\t'))
         arr.push_back(token);
 }
 
-int parseHeaderAkas(int &titleIdIndex, int &languageIndex, int &regionIndex, string header)
+int parseHeaderAkas(akas_t &akas, std::string header)
 {
-    vector<string> headerSplit;
+    std::vector<std::string> headerSplit;
     stringSplitByTabs(headerSplit, header);
+
+    int titleIdIndex = -1;
+    int languageIndex = -1;
+    int regionIndex = -1;
 
     for (int i = 0; i < headerSplit.size(); ++i)
     {
@@ -40,13 +72,22 @@ int parseHeaderAkas(int &titleIdIndex, int &languageIndex, int &regionIndex, str
     if (titleIdIndex == -1 || languageIndex == -1 || regionIndex == -1)
         return AKAS_HEADER_ERROR;
 
+    akas.titleIdIndex = titleIdIndex;
+    akas.languageIndex = languageIndex;
+    akas.regionIndex = regionIndex;
+
     return EXIT_SUCCESS;
 }
 
-int parseHeaderBasics(int &tconstIndex, int &titleTypeIndex, int &isAdultIndex, int &runtimeMinutesIndex, string header)
+int parseHeaderBasics(basics_t &basics, std::string header)
 {
-    vector<string> headerSplit;
+    std::vector<std::string> headerSplit;
     stringSplitByTabs(headerSplit, header);
+
+    int titleTypeIndex = -1;
+    int tconstIndex = -1;
+    int isAdultIndex = -1;
+    int runtimeMinutesIndex = -1;
 
     for (int i = 0; i < headerSplit.size(); ++i)
     {
@@ -63,13 +104,22 @@ int parseHeaderBasics(int &tconstIndex, int &titleTypeIndex, int &isAdultIndex, 
     if (titleTypeIndex == -1 || tconstIndex == -1 || isAdultIndex == -1 || runtimeMinutesIndex == -1)
         return BASICS_HEADER_ERROR;
 
+    basics.titleTypeIndex = titleTypeIndex;
+    basics.tconstIndex = tconstIndex;
+    basics.isAdultIndex = isAdultIndex;
+    basics.runtimeMinutesIndex = runtimeMinutesIndex;
+
     return EXIT_SUCCESS;
 }
 
-int parseHeaderRatings(int &tconstIndex, int &averageRatingIndex, int &numVotesIndex, string header)
+int parseHeaderRatings(ratings_t &ratings, std::string header)
 {
-    vector<string> headerSplit;
+    std::vector<std::string> headerSplit;
     stringSplitByTabs(headerSplit, header);
+
+    int tconstIndex = -1;
+    int averageRatingIndex = -1;
+    int numVotesIndex = -1;
 
     for (int i = 0; i < headerSplit.size(); ++i)
     {
@@ -84,28 +134,83 @@ int parseHeaderRatings(int &tconstIndex, int &averageRatingIndex, int &numVotesI
     if (averageRatingIndex == -1 || tconstIndex == -1 || numVotesIndex == -1)
         return RATINGS_HEADER_ERROR;
 
+    ratings.tconstIndex = tconstIndex;
+    ratings.averageRatingIndex = averageRatingIndex;
+    ratings.numVotesIndex = numVotesIndex;
+
     return EXIT_SUCCESS;
 }
 
-int find10Lines(vector<string> &arr, ifstream &akas, ifstream &ratings, ifstream &basics, int runtime)
+bool checkMovie(basics_t &basics, int runtime, std::string id)
+{
+    basics.file.clear();
+    basics.file.seekg(0);
+
+    std::string line;
+    while (std::getline(basics.file, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[basics.tconstIndex] == id)
+        {
+            if (splitedLine[basics.isAdultIndex] == "0" &&
+                splitedLine[basics.titleTypeIndex] == "tvseries" &&
+                std::stoi(splitedLine[basics.runtimeMinutesIndex].c_str()) < runtime)
+            {
+                return true;
+            }
+
+            break;
+        }
+    }
+
+    return false;
+}
+
+int getRating(ratings_t &ratings, std::string id)
+{
+    ratings.file.clear();
+    ratings.file.seekg(0);
+
+    int rating = -1;
+
+    std::string line;
+    while (std::getline(ratings.file, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[ratings.tconstIndex] == id)
+        {
+            if (std::stoi(splitedLine[ratings.numVotesIndex]) > RATING_MIN_VOTES_NUM)
+                rating = std::stoi(splitedLine[ratings.averageRatingIndex]);
+
+            break;
+        }
+    }
+
+    return rating;
+}
+
+int find10Lines(std::vector<std::string> &arr, std::ifstream &akas,
+                std::ifstream &ratings, std::ifstream &basics, int runtime)
 {
     if (!(akas.is_open() && ratings.is_open() && basics.is_open()) || runtime <= 0)
         return FILE_ERROR;
 
-    string header;
+    std::string header;
     int rc = 0;
 
     akas.clear();
     akas.seekg(0);
 
-    if (!getline(akas, header))
+    if (!std::getline(akas, header))
         return FILE_ERROR;
 
-    int titleIdIndex = -1;
-    int languageIndex = -1;
-    int regionIndex = -1;
+    akas_t akasStruct;
 
-    if ((rc = parseHeaderAkas(titleIdIndex, languageIndex, regionIndex, header)))
+    if ((rc = parseHeaderAkas(akasStruct, header)))
         return rc;
 
     basics.clear();
@@ -113,11 +218,6 @@ int find10Lines(vector<string> &arr, ifstream &akas, ifstream &ratings, ifstream
 
     if (!getline(basics, header))
         return FILE_ERROR;
-
-    int titleTypeIndex = -1;
-    int tconstBasicsIndex = -1;
-    int isAdultIndex = -1;
-    int runtimeMinutesIndex = -1;
 
     if ((rc = parseHeaderBasics(tconstBasicsIndex, titleTypeIndex, isAdultIndex, runtimeMinutesIndex, header)))
         return rc;
@@ -135,7 +235,7 @@ int find10Lines(vector<string> &arr, ifstream &akas, ifstream &ratings, ifstream
     if ((rc = parseHeaderRatings(tconstRatingsIndex, averageRatingIndex, numVotesIndex, header)))
         return rc;
 
-        return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 }
 
 // akas - title language, basics - runtime and isadult, ratings
@@ -175,7 +275,7 @@ int main(int argc, char const *argv[])
         {
             try
             {
-                runtime = stoi(argv[i]);
+                runtime = std::stoi(argv[i]);
             }
             catch (...)
             {
@@ -196,18 +296,18 @@ int main(int argc, char const *argv[])
     // cout << argv[basicsIndex] << '\n';
     // cout << argv[ratingsIndex] << '\n';
 
-    ifstream akasFile(argv[akasIndex]);
+    std::ifstream akasFile(argv[akasIndex]);
     if (!akasFile.is_open())
         return FILE_DOES_NOT_EXIST;
 
-    ifstream basicsFile(argv[basicsIndex]);
+    std::ifstream basicsFile(argv[basicsIndex]);
     if (!basicsFile.is_open())
     {
         akasFile.close();
         return FILE_DOES_NOT_EXIST;
     }
 
-    ifstream ratingsFile(argv[ratingsIndex]);
+    std::ifstream ratingsFile(argv[ratingsIndex]);
     if (!ratingsFile.is_open())
     {
         akasFile.close();
@@ -215,7 +315,7 @@ int main(int argc, char const *argv[])
         return FILE_DOES_NOT_EXIST;
     }
 
-    vector<string> arr;
+    std::vector<std::string> arr;
     find10Lines(arr, akasFile, ratingsFile, basicsFile, runtime);
 
     return EXIT_SUCCESS;
