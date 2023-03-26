@@ -46,14 +46,13 @@ void stringSplitByTabs(std::vector<std::string> &arr, std::string str)
         arr.push_back(token);
 }
 
-int getRating(std::ifstream &ratings, std::string id)
+double getRating(std::ifstream &ratings, std::string id)
 {
-    ratings.clear();
-    ratings.seekg(0);
-
-    int rating = -1;
+    double rating = -1;
 
     std::string line;
+    auto prevPos = ratings.tellg();
+
     while (std::getline(ratings, line))
     {
         std::vector<std::string> splitedLine;
@@ -65,7 +64,7 @@ int getRating(std::ifstream &ratings, std::string id)
             {
                 try
                 {
-                    rating = std::stoi(splitedLine[RATINGS_RATING_INDEX]);
+                    rating = std::stod(splitedLine[RATINGS_RATING_INDEX]);
                 }
                 catch (...)
                 {
@@ -75,6 +74,15 @@ int getRating(std::ifstream &ratings, std::string id)
 
             break;
         }
+
+        if (splitedLine[RATINGS_ID_INDEX] > id)
+        {
+            ratings.clear();
+            ratings.seekg(prevPos);
+            break;
+        }
+
+        prevPos = ratings.tellg();
     }
 
     return rating;
@@ -82,11 +90,10 @@ int getRating(std::ifstream &ratings, std::string id)
 
 int getRuntime(std::ifstream &basics, std::string id)
 {
-    basics.clear();
-    basics.seekg(0);
-
     std::string line;
     int runtime = -1;
+
+    auto prevPos = basics.tellg();
 
     while (std::getline(basics, line))
     {
@@ -95,6 +102,7 @@ int getRuntime(std::ifstream &basics, std::string id)
 
         if (splitedLine[BASICS_ID_INDEX] == id)
         {
+
             try
             {
                 runtime = std::stoi(splitedLine[BASICS_RUNTIME_INDEX]);
@@ -105,38 +113,24 @@ int getRuntime(std::ifstream &basics, std::string id)
             }
             break;
         }
+
+        if (splitedLine[BASICS_ID_INDEX] > id)
+        {
+            basics.clear();
+            basics.seekg(prevPos);
+            break;
+        }
+
+        prevPos = basics.tellg();
     }
 
     return runtime;
 }
 
-int sumRuntime(std::ifstream &basics, std::ifstream &data, std::string id)
-{
-    data.clear();
-    data.seekg(0);
-
-    std::string line;
-    int sumRuntime = 0;
-
-    while (std::getline(data, line))
-    {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
-
-        if (splitedLine[DATA_PARENT_ID_INDEX] == id)
-        {
-            int runtime = getRuntime(basics, splitedLine[DATA_ID_INDEX]);
-            if (runtime > 0)
-                sumRuntime += runtime;
-        }
-    }
-
-    return sumRuntime;
-}
-
 std::string getTitle(std::ifstream &akas, std::string id)
 {
     std::string line;
+    auto prevPos = akas.tellg();
 
     while (std::getline(akas, line))
     {
@@ -149,10 +143,11 @@ std::string getTitle(std::ifstream &akas, std::string id)
         if (splitedLine[AKAS_ID_INDEX] > id)
         {
             akas.clear();
-            akas.seekg(0);
-
+            akas.seekg(prevPos);
             break;
         }
+
+        prevPos = akas.tellg();
     }
 
     return "";
@@ -160,26 +155,22 @@ std::string getTitle(std::ifstream &akas, std::string id)
 
 int insertInSorted(std::vector<double> &arr, double value)
 {
-    if (arr.empty())
-        arr.push_back(value);
-    else
+    for (int i = 0; i < arr.size(); ++i)
     {
-        for (int i = 0; i < arr.size(); ++i)
+        if (arr[i] > value)
         {
-            if (arr[i] > value)
-            {
-                arr.insert(arr.begin() + i, value);
-                break;
-            }
+            arr.insert(arr.begin() + i, value);
+            return i;
         }
     }
+
+    arr.push_back(value);
+
+    return arr.size() - 1;
 }
 
 std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id)
 {
-    basics.clear();
-    basics.seekg(0);
-
     std::string line;
 
     while (std::getline(basics, line))
@@ -194,15 +185,12 @@ std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id
     return {};
 }
 
-std::vector<std::string> find10Series(std::ifstream &akas,
-                                      std::ifstream &basics,
-                                      std::ifstream &ratings,
-                                      std::ifstream &data,
-                                      int runtime)
+std::map<std::string, int> collectRuntime(std::ifstream &data, std::ifstream &basics)
 {
-    std::vector<double> ratingsVec;
-    std::vector<std::string> titles;
-    std::vector<std::string> ids;
+    std::map<std::string, int> dictionary;
+
+    auto dataPos = data.tellg();
+    auto basicsPos = basics.tellg();
 
     std::string line;
 
@@ -211,89 +199,189 @@ std::vector<std::string> find10Series(std::ifstream &akas,
         std::vector<std::string> splitedLine;
         stringSplitByTabs(splitedLine, line);
 
-        if (std::find(ids.begin(), ids.end(), splitedLine[DATA_PARENT_ID_INDEX]) != ids.end())
+        int runtime = getRuntime(basics, splitedLine[DATA_ID_INDEX]);
+        if (runtime < 0)
             continue;
 
-        std::vector<std::string> basicLine = getLineFromBasics(basics, splitedLine[DATA_PARENT_ID_INDEX]);
+        if (dictionary.find(splitedLine[DATA_PARENT_ID_INDEX]) == dictionary.end())
+            dictionary[splitedLine[DATA_PARENT_ID_INDEX]] = runtime;
+        else
+            dictionary[splitedLine[DATA_PARENT_ID_INDEX]] += runtime;
+    }
+
+    data.clear();
+    data.seekg(dataPos);
+
+    basics.clear();
+    basics.seekg(basicsPos);
+
+    return dictionary;
+}
+
+std::map<std::string, int> filterByRuntime(std::map<std::string, int> dictionary, int maxRuntime)
+{
+    std::map<std::string, int> newDictionary;
+    for (auto x : dictionary)
+    {
+        if (x.second <= maxRuntime)
+            newDictionary.insert(x);
+    }
+
+    return newDictionary;
+}
+
+std::vector<std::string> find10Series(std::ifstream &akas,
+                                      std::ifstream &basics,
+                                      std::ifstream &ratings,
+                                      std::ifstream &data,
+                                      int runtime)
+{
+
+    std::vector<double> ratingsVec;
+    std::vector<std::string> titles;
+
+    // Read headers
+    std::string temp;
+    if (!std::getline(ratings, temp))
+        return {};
+    if (!std::getline(akas, temp))
+        return {};
+    if (!std::getline(data, temp))
+        return {};
+    if (!std::getline(basics, temp))
+        return {};
+
+    std::map<std::string, int> dictionary = collectRuntime(data, basics);
+    dictionary = filterByRuntime(dictionary, runtime);
+
+    for (auto x : dictionary)
+    {
+        std::vector<std::string> basicLine = getLineFromBasics(basics, x.first);
+
         if (basicLine.empty())
             continue;
 
-        if (basicLine[BASICS_IS_ADULT_INDEX] != "0")
-            continue;
-
-        int rating = getRating(ratings, splitedLine[DATA_PARENT_ID_INDEX]);
-        if (rating < 0)
-            continue;
-
-        auto prevPos = data.tellg();
-        int curRuntime = sumRuntime(basics, data, splitedLine[DATA_PARENT_ID_INDEX]);
-        data.seekg(prevPos);
-
-        if (curRuntime <= 0 && curRuntime > runtime)
-            continue;
-        else
+        if (basicLine[BASICS_IS_ADULT_INDEX] == "0")
         {
+            double rating = getRating(ratings, x.first);
+
+            if (rating < 0)
+                continue;
+
             if (ratingsVec.size() < 10)
             {
-                std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+                std::string title = getTitle(akas, x.first);
                 if (title == "")
                     title = basicLine[BASICS_TITLE_INDEX];
 
                 int pos = insertInSorted(ratingsVec, rating);
                 titles.insert(titles.begin() + pos, title);
-                ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
             }
             else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
             {
-                std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+                std::string title = getTitle(akas, x.first);
                 if (title == "")
                     title = basicLine[BASICS_TITLE_INDEX];
 
                 ratingsVec.erase(ratingsVec.begin());
                 titles.erase(titles.begin());
-                ids.erase(ids.begin());
 
                 int pos = insertInSorted(ratingsVec, rating);
                 titles.insert(titles.begin() + pos, title);
-                ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
             }
         }
-
-        // if (splitedLine[BASICS_TYPE_INDEX] == "tvSeries" && splitedLine[BASICS_IS_ADULT_INDEX] == "0")
-        // {
-        //     std::string title = getTitle(akas, splitedLine[BASICS_ID_INDEX]);
-        //     if (title == "")
-        //         title = splitedLine[BASICS_TITLE_INDEX];
-
-        //     if (std::find(titles.begin(), titles.end(), title) != titles.end())
-        //         continue;
-
-        //     int rating = getRating(ratings, splitedLine[BASICS_ID_INDEX]);
-        //     if (rating < 0)
-        //         continue;
-
-        //     int curRuntime = sumRuntime(basics, data, splitedLine[BASICS_ID_INDEX]);
-        //     if (curRuntime <= 0 && curRuntime > runtime)
-        //         continue;
-
-        //     if (ratingsVec.size() < 10)
-        //     {
-        //         int pos = insertInSorted(ratingsVec, rating);
-        //         titles.insert(titles.begin() + pos, title);
-        //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
-        //     }
-        //     else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
-        //     {
-        //         ratingsVec.erase(ratingsVec.begin());
-        //         titles.erase(titles.begin());
-        //         ids.erase(ids.)
-
-        //             int pos = insertInSorted(ratingsVec, rating);
-        //         titles.insert(titles.begin() + pos, title);
-        //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
-        //     }
-        // }
     }
+
+    // std::string line;
+
+    // while (std::getline(data, line))
+    // {
+    //     std::vector<std::string> splitedLine;
+    //     stringSplitByTabs(splitedLine, line);
+
+    //     if (std::find(ids.begin(), ids.end(), splitedLine[DATA_PARENT_ID_INDEX]) != ids.end())
+    //         continue;
+
+    //     std::vector<std::string> basicLine = getLineFromBasics(basics, splitedLine[DATA_PARENT_ID_INDEX]);
+    //     if (basicLine.empty())
+    //         continue;
+
+    //     if (basicLine[BASICS_IS_ADULT_INDEX] != "0")
+    //         continue;
+
+    //     int rating = getRating(ratings, splitedLine[DATA_PARENT_ID_INDEX]);
+    //     if (rating < 0)
+    //         continue;
+
+    //     auto prevPos = data.tellg();
+    //     int curRuntime = sumRuntime(basics, data, splitedLine[DATA_PARENT_ID_INDEX]);
+    //     data.seekg(prevPos);
+
+    //     if (curRuntime <= 0 && curRuntime > runtime)
+    //         continue;
+    //     else
+    //     {
+    //         if (ratingsVec.size() < 10)
+    //         {
+    //             std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+    //             if (title == "")
+    //                 title = basicLine[BASICS_TITLE_INDEX];
+
+    //             int pos = insertInSorted(ratingsVec, rating);
+    //             titles.insert(titles.begin() + pos, title);
+    //             ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
+    //         }
+    //         else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
+    //         {
+    //             std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+    //             if (title == "")
+    //                 title = basicLine[BASICS_TITLE_INDEX];
+
+    //             ratingsVec.erase(ratingsVec.begin());
+    //             titles.erase(titles.begin());
+    //             ids.erase(ids.begin());
+
+    //             int pos = insertInSorted(ratingsVec, rating);
+    //             titles.insert(titles.begin() + pos, title);
+    //             ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
+    //         }
+    //     }
+
+    // if (splitedLine[BASICS_TYPE_INDEX] == "tvSeries" && splitedLine[BASICS_IS_ADULT_INDEX] == "0")
+    // {
+    //     std::string title = getTitle(akas, splitedLine[BASICS_ID_INDEX]);
+    //     if (title == "")
+    //         title = splitedLine[BASICS_TITLE_INDEX];
+
+    //     if (std::find(titles.begin(), titles.end(), title) != titles.end())
+    //         continue;
+
+    //     int rating = getRating(ratings, splitedLine[BASICS_ID_INDEX]);
+    //     if (rating < 0)
+    //         continue;
+
+    //     int curRuntime = sumRuntime(basics, data, splitedLine[BASICS_ID_INDEX]);
+    //     if (curRuntime <= 0 && curRuntime > runtime)
+    //         continue;
+
+    //     if (ratingsVec.size() < 10)
+    //     {
+    //         int pos = insertInSorted(ratingsVec, rating);
+    //         titles.insert(titles.begin() + pos, title);
+    //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+    //     }
+    //     else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
+    //     {
+    //         ratingsVec.erase(ratingsVec.begin());
+    //         titles.erase(titles.begin());
+    //         ids.erase(ids.)
+
+    //             int pos = insertInSorted(ratingsVec, rating);
+    //         titles.insert(titles.begin() + pos, title);
+    //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+    //     }
+    // }
+    //}
 
     return titles;
 }
