@@ -48,6 +48,9 @@ void stringSplitByTabs(std::vector<std::string> &arr, std::string str)
 
 int getRating(std::ifstream &ratings, std::string id)
 {
+    ratings.clear();
+    ratings.seekg(0);
+
     int rating = -1;
 
     std::string line;
@@ -58,16 +61,18 @@ int getRating(std::ifstream &ratings, std::string id)
 
         if (splitedLine[RATINGS_ID_INDEX] == id)
         {
-            if (std::stod(splitedLine[RATINGS_NUM_VOTES_INDEX]) > RATING_MIN_VOTES_NUM)
-                rating = std::stoi(splitedLine[RATINGS_RATING_INDEX]);
+            if (splitedLine[RATINGS_NUM_VOTES_INDEX] != "\\N" && std::stod(splitedLine[RATINGS_NUM_VOTES_INDEX]) > RATING_MIN_VOTES_NUM)
+            {
+                try
+                {
+                    rating = std::stoi(splitedLine[RATINGS_RATING_INDEX]);
+                }
+                catch (...)
+                {
+                    break;
+                }
+            }
 
-            break;
-        }
-
-        if (splitedLine[RATINGS_ID_INDEX] > id)
-        {
-            ratings.clear();
-            ratings.seekg(0);
             break;
         }
     }
@@ -77,6 +82,9 @@ int getRating(std::ifstream &ratings, std::string id)
 
 int getRuntime(std::ifstream &basics, std::string id)
 {
+    basics.clear();
+    basics.seekg(0);
+
     std::string line;
     int runtime = -1;
 
@@ -87,7 +95,14 @@ int getRuntime(std::ifstream &basics, std::string id)
 
         if (splitedLine[BASICS_ID_INDEX] == id)
         {
-            runtime = std::stoi(splitedLine[BASICS_RUNTIME_INDEX]);
+            try
+            {
+                runtime = std::stoi(splitedLine[BASICS_RUNTIME_INDEX]);
+            }
+            catch (...)
+            {
+                break;
+            }
             break;
         }
     }
@@ -97,8 +112,10 @@ int getRuntime(std::ifstream &basics, std::string id)
 
 int sumRuntime(std::ifstream &basics, std::ifstream &data, std::string id)
 {
-    std::string line;
+    data.clear();
+    data.seekg(0);
 
+    std::string line;
     int sumRuntime = 0;
 
     while (std::getline(data, line))
@@ -111,8 +128,6 @@ int sumRuntime(std::ifstream &basics, std::ifstream &data, std::string id)
             int runtime = getRuntime(basics, splitedLine[DATA_ID_INDEX]);
             if (runtime > 0)
                 sumRuntime += runtime;
-            else
-                return RUNTIME_ERROR;
         }
     }
 
@@ -160,6 +175,25 @@ int insertInSorted(std::vector<double> &arr, double value)
     }
 }
 
+std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id)
+{
+    basics.clear();
+    basics.seekg(0);
+
+    std::string line;
+
+    while (std::getline(basics, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[BASICS_ID_INDEX] == id)
+            return splitedLine;
+    }
+
+    return {};
+}
+
 std::vector<std::string> find10Series(std::ifstream &akas,
                                       std::ifstream &basics,
                                       std::ifstream &ratings,
@@ -172,45 +206,93 @@ std::vector<std::string> find10Series(std::ifstream &akas,
 
     std::string line;
 
-    while (std::getline(basics, line))
+    while (std::getline(data, line))
     {
         std::vector<std::string> splitedLine;
         stringSplitByTabs(splitedLine, line);
 
-        if (splitedLine[BASICS_TYPE_INDEX] == "tvSeries" && splitedLine[BASICS_IS_ADULT_INDEX] == "0")
+        if (std::find(ids.begin(), ids.end(), splitedLine[DATA_PARENT_ID_INDEX]) != ids.end())
+            continue;
+
+        std::vector<std::string> basicLine = getLineFromBasics(basics, splitedLine[DATA_PARENT_ID_INDEX]);
+        if (basicLine.empty())
+            continue;
+
+        if (basicLine[BASICS_IS_ADULT_INDEX] != "0")
+            continue;
+
+        int rating = getRating(ratings, splitedLine[DATA_PARENT_ID_INDEX]);
+        if (rating < 0)
+            continue;
+
+        auto prevPos = data.tellg();
+        int curRuntime = sumRuntime(basics, data, splitedLine[DATA_PARENT_ID_INDEX]);
+        data.seekg(prevPos);
+
+        if (curRuntime <= 0 && curRuntime > runtime)
+            continue;
+        else
         {
-            std::string title = getTitle(akas, splitedLine[BASICS_ID_INDEX]);
-            if (title == "")
-                title = splitedLine[BASICS_TITLE_INDEX];
-
-            if (std::find(titles.begin(), titles.end(), title) != titles.end())
-                continue;
-
-            int rating = getRating(ratings, splitedLine[BASICS_ID_INDEX]);
-            if (rating < 0)
-                continue;
-
-            int curRuntime = sumRuntime(basics, data, splitedLine[BASICS_ID_INDEX]);
-            if (curRuntime <= 0 && curRuntime > runtime)
-                continue;
-
             if (ratingsVec.size() < 10)
             {
+                std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+                if (title == "")
+                    title = basicLine[BASICS_TITLE_INDEX];
+
                 int pos = insertInSorted(ratingsVec, rating);
                 titles.insert(titles.begin() + pos, title);
-                ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+                ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
             }
             else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
             {
+                std::string title = getTitle(akas, splitedLine[DATA_PARENT_ID_INDEX]);
+                if (title == "")
+                    title = basicLine[BASICS_TITLE_INDEX];
+
                 ratingsVec.erase(ratingsVec.begin());
                 titles.erase(titles.begin());
-                ids.erase(ids.)
+                ids.erase(ids.begin());
 
-                    int pos = insertInSorted(ratingsVec, rating);
+                int pos = insertInSorted(ratingsVec, rating);
                 titles.insert(titles.begin() + pos, title);
-                ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+                ids.insert(ids.begin() + pos, splitedLine[DATA_PARENT_ID_INDEX]);
             }
         }
+
+        // if (splitedLine[BASICS_TYPE_INDEX] == "tvSeries" && splitedLine[BASICS_IS_ADULT_INDEX] == "0")
+        // {
+        //     std::string title = getTitle(akas, splitedLine[BASICS_ID_INDEX]);
+        //     if (title == "")
+        //         title = splitedLine[BASICS_TITLE_INDEX];
+
+        //     if (std::find(titles.begin(), titles.end(), title) != titles.end())
+        //         continue;
+
+        //     int rating = getRating(ratings, splitedLine[BASICS_ID_INDEX]);
+        //     if (rating < 0)
+        //         continue;
+
+        //     int curRuntime = sumRuntime(basics, data, splitedLine[BASICS_ID_INDEX]);
+        //     if (curRuntime <= 0 && curRuntime > runtime)
+        //         continue;
+
+        //     if (ratingsVec.size() < 10)
+        //     {
+        //         int pos = insertInSorted(ratingsVec, rating);
+        //         titles.insert(titles.begin() + pos, title);
+        //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+        //     }
+        //     else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
+        //     {
+        //         ratingsVec.erase(ratingsVec.begin());
+        //         titles.erase(titles.begin());
+        //         ids.erase(ids.)
+
+        //             int pos = insertInSorted(ratingsVec, rating);
+        //         titles.insert(titles.begin() + pos, title);
+        //         ids.insert(ids.begin() + pos, splitedLine[BASICS_ID_INDEX]);
+        //     }
+        // }
     }
 
     return titles;
@@ -284,15 +366,8 @@ int main(int argc, char const *argv[])
           ratingsFile.is_open() && dataFile.is_open()))
         return FILE_DOES_NOT_EXIST;
 
-    try
-    {
-        std::vector<std::string> arr = find10Series(akasFile, basicsFile, ratingsFile, dataFile, runtime);
-        printVector(arr);
-    }
-    catch (...)
-    {
-        return FILE_DOES_NOT_EXIST;
-    }
+    std::vector<std::string> arr = find10Series(akasFile, basicsFile, ratingsFile, dataFile, runtime);
+    printVector(arr);
 
     return EXIT_SUCCESS;
 }
