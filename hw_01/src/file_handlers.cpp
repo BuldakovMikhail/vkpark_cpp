@@ -1,0 +1,126 @@
+#include "indexes.h"
+#include "string_processing.h"
+
+#include "file_handlers.h"
+
+std::map<std::string, int> filterByRuntime(std::map<std::string, int> dictionary, int maxRuntime)
+{
+    std::map<std::string, int> newDictionary;
+    for (auto x : dictionary)
+    {
+        if (x.second <= maxRuntime)
+            newDictionary.insert(x);
+    }
+
+    return newDictionary;
+}
+
+std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id)
+{
+    std::string line;
+
+    while (std::getline(basics, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[BASICS_ID_INDEX] == id)
+            return splitedLine;
+    }
+
+    return {};
+}
+
+double getRating(std::ifstream &ratings, std::string id)
+{
+    double rating = -1;
+
+    std::string line;
+    auto prevPos = ratings.tellg();
+
+    while (std::getline(ratings, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[RATINGS_ID_INDEX] == id)
+        {
+            if (splitedLine[RATINGS_NUM_VOTES_INDEX] != "\\N" && std::stod(splitedLine[RATINGS_NUM_VOTES_INDEX]) > RATING_MIN_VOTES_NUM)
+            {
+                if (splitedLine[RATINGS_RATING_INDEX] != "\\N")
+                    rating = std::stod(splitedLine[RATINGS_RATING_INDEX]);
+            }
+
+            break;
+        }
+
+        if (splitedLine[RATINGS_ID_INDEX] > id)
+        {
+            ratings.clear(); // If id doesn't founded make backstep
+            ratings.seekg(prevPos);
+            break;
+        }
+
+        prevPos = ratings.tellg();
+    }
+
+    return rating;
+}
+
+std::string getTitle(std::ifstream &akas, std::string id)
+{
+    std::string line;
+    auto prevPos = akas.tellg();
+
+    while (std::getline(akas, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[AKAS_ID_INDEX] == id && splitedLine[AKAS_REGION_INDEX] == "RU")
+            return splitedLine[AKAS_TITLE_INDEX];
+
+        if (splitedLine[AKAS_ID_INDEX] > id)
+        {
+            akas.clear(); // If id doesn't founded make backstep
+            akas.seekg(prevPos);
+            break;
+        }
+
+        prevPos = akas.tellg();
+    }
+
+    return "";
+}
+
+int getRuntime(std::ifstream &basics, std::string id)
+{
+    std::string line;
+    int runtime = -1;
+
+    auto prevPos = basics.tellg();
+
+    while (std::getline(basics, line))
+    {
+        std::vector<std::string> splitedLine;
+        stringSplitByTabs(splitedLine, line);
+
+        if (splitedLine[BASICS_ID_INDEX] == id)
+        {
+            if (splitedLine[BASICS_RUNTIME_INDEX] != "\\N")
+                runtime = std::stoi(splitedLine[BASICS_RUNTIME_INDEX]);
+            break;
+        }
+
+        if (splitedLine[BASICS_ID_INDEX] > id)
+        {
+            basics.clear(); // If id doesn't founded make backstep
+            basics.seekg(prevPos);
+            break;
+        }
+
+        prevPos = basics.tellg();
+    }
+
+    return runtime;
+}
