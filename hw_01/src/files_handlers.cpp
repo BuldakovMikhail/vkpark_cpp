@@ -36,7 +36,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
         if (basicLine.empty())
             continue;
 
-        if (basicLine[BASICS_IS_ADULT_INDEX] == "0")
+        if (basicLine.at(BASICS_IS_ADULT_INDEX) == "0")
         {
             double rating = getRating(ratings, x.first);
 
@@ -47,7 +47,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
             {
                 std::string title = getTitle(akas, x.first); // find title only when it's needed
                 if (title == "")
-                    title = basicLine[BASICS_TITLE_INDEX];
+                    title = basicLine.at(BASICS_TITLE_INDEX);
 
                 int pos = insertInSorted(ratingsVec, rating);
                 titles.insert(titles.begin() + pos, title);
@@ -56,7 +56,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
             {
                 std::string title = getTitle(akas, x.first);
                 if (title == "")
-                    title = basicLine[BASICS_TITLE_INDEX];
+                    title = basicLine.at(BASICS_TITLE_INDEX);
 
                 ratingsVec.erase(ratingsVec.begin());
                 titles.erase(titles.begin());
@@ -80,17 +80,16 @@ std::map<std::string, int> collectRuntime(std::ifstream &data, std::ifstream &ba
 
     while (std::getline(data, line))
     {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
+        std::vector<std::string> splitedLine = stringSplitByTabs(line);
 
-        int runtime = getRuntime(basics, splitedLine[DATA_ID_INDEX]);
+        int runtime = getRuntime(basics, splitedLine.at(DATA_ID_INDEX));
         if (runtime < 0)
             continue;
 
-        if (dictionary.find(splitedLine[DATA_PARENT_ID_INDEX]) == dictionary.end())
-            dictionary[splitedLine[DATA_PARENT_ID_INDEX]] = runtime;
+        if (dictionary.find(splitedLine.at(DATA_PARENT_ID_INDEX)) == dictionary.end())
+            dictionary[splitedLine.at(DATA_PARENT_ID_INDEX)] = runtime;
         else
-            dictionary[splitedLine[DATA_PARENT_ID_INDEX]] += runtime;
+            dictionary[splitedLine.at(DATA_PARENT_ID_INDEX)] += runtime;
     }
 
     // Return files on passed condition

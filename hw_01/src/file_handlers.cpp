@@ -21,10 +21,9 @@ std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id
 
     while (std::getline(basics, line))
     {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
+        std::vector<std::string> splitedLine = stringSplitByTabs(line);
 
-        if (splitedLine[BASICS_ID_INDEX] == id)
+        if (splitedLine.at(BASICS_ID_INDEX) == id)
             return splitedLine;
     }
 
@@ -40,21 +39,20 @@ double getRating(std::ifstream &ratings, std::string id)
 
     while (std::getline(ratings, line))
     {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
+        std::vector<std::string> splitedLine = stringSplitByTabs(line);
 
-        if (splitedLine[RATINGS_ID_INDEX] == id)
+        if (splitedLine.at(RATINGS_ID_INDEX) == id)
         {
-            if (splitedLine[RATINGS_NUM_VOTES_INDEX] != "\\N" && std::stod(splitedLine[RATINGS_NUM_VOTES_INDEX]) > RATING_MIN_VOTES_NUM)
+            if (splitedLine.at(RATINGS_NUM_VOTES_INDEX) != "\\N" && std::stod(splitedLine.at(RATINGS_NUM_VOTES_INDEX)) > RATING_MIN_VOTES_NUM)
             {
-                if (splitedLine[RATINGS_RATING_INDEX] != "\\N")
-                    rating = std::stod(splitedLine[RATINGS_RATING_INDEX]);
+                if (splitedLine.at(RATINGS_RATING_INDEX) != "\\N")
+                    rating = std::stod(splitedLine.at(RATINGS_RATING_INDEX));
             }
 
             break;
         }
 
-        if (splitedLine[RATINGS_ID_INDEX] > id)
+        if (splitedLine.at(RATINGS_ID_INDEX) > id)
         {
             ratings.clear(); // If id doesn't founded make backstep
             ratings.seekg(prevPos);
@@ -74,13 +72,12 @@ std::string getTitle(std::ifstream &akas, std::string id)
 
     while (std::getline(akas, line))
     {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
+        std::vector<std::string> splitedLine = stringSplitByTabs(line);
 
-        if (splitedLine[AKAS_ID_INDEX] == id && splitedLine[AKAS_REGION_INDEX] == "RU")
-            return splitedLine[AKAS_TITLE_INDEX];
+        if (splitedLine.at(AKAS_ID_INDEX) == id && splitedLine.at(AKAS_REGION_INDEX) == "RU")
+            return splitedLine.at(AKAS_TITLE_INDEX);
 
-        if (splitedLine[AKAS_ID_INDEX] > id)
+        if (splitedLine.at(AKAS_ID_INDEX) > id)
         {
             akas.clear(); // If id doesn't founded make backstep
             akas.seekg(prevPos);
@@ -102,17 +99,16 @@ int getRuntime(std::ifstream &basics, std::string id)
 
     while (std::getline(basics, line))
     {
-        std::vector<std::string> splitedLine;
-        stringSplitByTabs(splitedLine, line);
+        std::vector<std::string> splitedLine = stringSplitByTabs(line);
 
-        if (splitedLine[BASICS_ID_INDEX] == id)
+        if (splitedLine.at(BASICS_ID_INDEX) == id)
         {
-            if (splitedLine[BASICS_RUNTIME_INDEX] != "\\N")
-                runtime = std::stoi(splitedLine[BASICS_RUNTIME_INDEX]);
+            if (splitedLine.at(BASICS_RUNTIME_INDEX) != "\\N")
+                runtime = std::stoi(splitedLine.at(BASICS_RUNTIME_INDEX));
             break;
         }
 
-        if (splitedLine[BASICS_ID_INDEX] > id)
+        if (splitedLine.at(BASICS_ID_INDEX) > id)
         {
             basics.clear(); // If id doesn't founded make backstep
             basics.seekg(prevPos);
