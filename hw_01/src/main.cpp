@@ -5,7 +5,6 @@
 const int ARGUMENTS_ERROR = 101;
 const int FILE_DOES_NOT_EXIST = 102;
 const int FILE_ERROR = 103;
-const int EMPTY_RESULT = 104;
 
 #include <iostream>
 #include <vector>
@@ -51,8 +50,8 @@ int main(int argc, char const *argv[])
         std::vector<std::string> arr = find10Series(akasFile, basicsFile, ratingsFile, dataFile, arguments.runtime);
         if (arr.empty())
         {
-            std::cerr << "Ничего не было найдено" << std::endl;
-            return EMPTY_RESULT;
+            std::cerr << "Переданы неккорректные файлы" << std::endl;
+            return FILE_ERROR;
         }
         else
             printVector(arr);

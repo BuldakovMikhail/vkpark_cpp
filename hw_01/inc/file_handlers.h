@@ -14,4 +14,9 @@ double getRating(std::ifstream &ratings, std::string id);
 std::string getTitle(std::ifstream &akas, std::string id);
 int getRuntime(std::ifstream &basics, std::string id);
 
+bool checkHeaderAkas(std::ifstream &akas);
+bool checkHeaderBasics(std::ifstream &basics);
+bool checkHeaderRatings(std::ifstream &ratings);
+bool checkHeaderData(std::ifstream &data);
+
 #endif

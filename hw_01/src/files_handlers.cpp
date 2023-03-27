@@ -15,15 +15,14 @@ std::vector<std::string> find10Series(std::ifstream &akas,
     std::vector<double> ratingsVec;  // Sorted current the biggest ratings
     std::vector<std::string> titles; // Current titles
 
-    // Read headers
-    std::string temp;
-    if (!std::getline(ratings, temp))
+    // Check headers
+    if (!checkHeaderRatings(ratings))
         return {};
-    if (!std::getline(akas, temp))
+    if (!checkHeaderAkas(akas))
         return {};
-    if (!std::getline(data, temp))
+    if (!checkHeaderBasics(basics))
         return {};
-    if (!std::getline(basics, temp))
+    if (!checkHeaderData(data))
         return {};
 
     std::map<std::string, int> dictionary = collectRuntime(data, basics); // Using map for optimization reasons
@@ -46,7 +45,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
             if (ratingsVec.size() < 10)
             {
                 std::string title = getTitle(akas, x.first); // find title only when it's needed
-                if (title == "")
+                if (title.empty())
                     title = basicLine.at(BASICS_TITLE_INDEX);
 
                 int pos = insertInSorted(ratingsVec, rating);
@@ -55,7 +54,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
             else if (ratingsVec.size() >= 10 && rating > ratingsVec[0])
             {
                 std::string title = getTitle(akas, x.first);
-                if (title == "")
+                if (title.empty())
                     title = basicLine.at(BASICS_TITLE_INDEX);
 
                 ratingsVec.erase(ratingsVec.begin());
