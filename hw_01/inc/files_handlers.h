@@ -11,6 +11,6 @@ std::vector<std::string> find10Series(std::ifstream &akas,
                                       std::ifstream &data,
                                       int runtime);
 
-std::map<std::string, int> collectRuntime(std::ifstream &data, std::ifstream &basics);
+std::map<std::string, int> createSeriesRuntimeMap(std::ifstream &data, std::ifstream &basics);
 
 #endif

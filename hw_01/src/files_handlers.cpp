@@ -25,7 +25,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
     if (!checkHeaderData(data))
         return {};
 
-    std::map<std::string, int> dictionary = collectRuntime(data, basics); // Using map for optimization reasons
+    std::map<std::string, int> dictionary = createSeriesRuntimeMap(data, basics); // Using map for optimization reasons
     dictionary = filterByRuntime(dictionary, runtime);
 
     for (auto x : dictionary)
@@ -68,7 +68,7 @@ std::vector<std::string> find10Series(std::ifstream &akas,
     return titles;
 }
 
-std::map<std::string, int> collectRuntime(std::ifstream &data, std::ifstream &basics)
+std::map<std::string, int> createSeriesRuntimeMap(std::ifstream &data, std::ifstream &basics)
 {
     std::map<std::string, int> dictionary;
 
