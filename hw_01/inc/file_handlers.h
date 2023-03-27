@@ -6,7 +6,7 @@
 #ifndef __FILE_HANDLERS_H__
 #define __FILE_HANDLERS_H__
 
-#define RATING_MIN_VOTES_NUM 1000
+inline const int RATING_MIN_VOTES_NUM = 1000;
 
 std::map<std::string, int> filterByRuntime(std::map<std::string, int> dictionary, int maxRuntime);
 std::vector<std::string> getLineFromBasics(std::ifstream &basics, std::string id);

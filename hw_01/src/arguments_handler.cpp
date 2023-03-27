@@ -9,7 +9,7 @@ Arguments parseArguments(int argc, char const *argv[])
     Arguments arguments;
 
     if (argc != 10)
-        throw arguments_exception("Неверно передано количество аргументов");
+        throw arguments_exception("Неверноe количество аргументов");
 
     int akasIndex = -1;
     int basicsIndex = -1;
