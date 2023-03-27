@@ -2,13 +2,14 @@
 #include <cstring>
 
 #include "arguments_handler.h"
+#include "exception.h"
 
 Arguments parseArguments(int argc, char const *argv[])
 {
     Arguments arguments;
 
     if (argc != 10)
-        throw std::runtime_error("Неверно передано количество аргументов");
+        throw arguments_exception("Неверно передано количество аргументов");
 
     int akasIndex = -1;
     int basicsIndex = -1;
@@ -48,10 +49,10 @@ Arguments parseArguments(int argc, char const *argv[])
     }
 
     if (akasIndex == -1 || basicsIndex == -1 || ratingsIndex == -1 || dataIndex == -1)
-        throw std::runtime_error("Передано неверное количество файлов");
+        throw arguments_exception("Передано неверное количество файлов");
 
     if (runtime <= 0)
-        throw std::runtime_error("Неверно передано максимальное время");
+        throw arguments_exception("Неверно передано максимальное время");
 
 
     arguments.runtime = runtime;

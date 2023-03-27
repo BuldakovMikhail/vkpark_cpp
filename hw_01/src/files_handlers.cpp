@@ -4,6 +4,7 @@
 #include "vector_operations.h"
 
 #include "files_handlers.h"
+#include "exception.h"
 
 std::vector<std::string> find10Series(std::ifstream &akas,
                                       std::ifstream &basics,
@@ -17,13 +18,13 @@ std::vector<std::string> find10Series(std::ifstream &akas,
 
     // Check headers
     if (!checkHeaderRatings(ratings))
-        return {};
+        throw arguments_exception("Неверный файл");
     if (!checkHeaderAkas(akas))
-        return {};
+        throw arguments_exception("Неверный файл");
     if (!checkHeaderBasics(basics))
-        return {};
+        throw arguments_exception("Неверный файл");
     if (!checkHeaderData(data))
-        return {};
+        throw arguments_exception("Неверный файл");
 
     std::map<std::string, int> dictionary = createSeriesRuntimeMap(data, basics); // Using map for optimization reasons
     dictionary = filterByRuntime(dictionary, runtime);

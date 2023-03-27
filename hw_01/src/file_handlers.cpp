@@ -35,7 +35,7 @@ double getRating(std::ifstream &ratings, std::string id)
     double rating = -1;
 
     std::string line;
-    auto prevPos = ratings.tellg();
+    std::streampos prevPos = ratings.tellg();
 
     while (std::getline(ratings, line))
     {
@@ -68,7 +68,7 @@ double getRating(std::ifstream &ratings, std::string id)
 std::string getTitle(std::ifstream &akas, std::string id)
 {
     std::string line;
-    auto prevPos = akas.tellg();
+    std::streampos prevPos = akas.tellg();
 
     while (std::getline(akas, line))
     {
@@ -95,7 +95,7 @@ int getRuntime(std::ifstream &basics, std::string id)
     std::string line;
     int runtime = -1;
 
-    auto prevPos = basics.tellg();
+    std::streampos prevPos = basics.tellg();
 
     while (std::getline(basics, line))
     {
