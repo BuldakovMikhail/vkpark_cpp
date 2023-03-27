@@ -73,8 +73,8 @@ std::map<std::string, int> createSeriesRuntimeMap(std::ifstream &data, std::ifst
 {
     std::map<std::string, int> dictionary;
 
-    auto dataPos = data.tellg(); // Save carriage position
-    auto basicsPos = basics.tellg();
+    std::streampos dataPos = data.tellg(); // Save carriage position
+    std::streampos basicsPos = basics.tellg();
 
     std::string line;
 
