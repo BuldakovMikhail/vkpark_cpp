@@ -180,4 +180,3 @@ bool checkHeaderData(std::ifstream &data)
     else
         return true;
 }
-
