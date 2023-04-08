@@ -1,41 +1,17 @@
 #include <iostream>
-#include <sstream>
-#include <queue>
 #include <stack>
-#include <string>
-#include <memory>
-#include <cmath>
+#include <queue>
 
-class ICalculatable {
-public:
-    virtual ~ICalculatable() {};
+#include <sstream>
 
-    virtual double Calculate() const = 0;
-};
 
-bool isDouble(const std::string &s) {
-    std::istringstream iss(s);
-    double d;
-    return iss >> d >> std::ws && iss.eof();
-}
+#include "operations_parsing.h"
+#include "Calculatable.h"
 
-bool isOperation(std::string const &s) {
-    if (s == "+" || s == "-" || s == "/" || s == "round" || s == "floor")
-        return true;
+#include "expression_handling.h"
 
-    return false;
-}
-
-bool isPriorityGreater(std::string const &l, std::string const &r) {
-    if (l == "/" and r != "/")
-        return true;
-    else if ((l == "round" || l == "floor") && (r == "+" || r == "-"))
-        return true;
-
-    return false;
-}
-
-std::string infixToPostfix(std::string const &infix) {
+std::string infixToPostfix(std::string const &infix, bool (*isOperation)(std::string const &),
+                           bool (*isPriorityGreater)(std::string const &, std::string const &)) {
     std::string postfix;
 
     std::istringstream strStream(infix);
@@ -86,109 +62,7 @@ std::string infixToPostfix(std::string const &infix) {
     return postfix;
 }
 
-using ICalculatableUPtr = std::unique_ptr<ICalculatable>;
-
-class Plus : public ICalculatable {
-public:
-    Plus(ICalculatableUPtr left, ICalculatableUPtr right) {
-        l.swap(left);
-        r.swap(right);
-    };
-
-    //~Plus() = default;
-
-    double Calculate() const override {
-        return l->Calculate() + r->Calculate();
-    }
-
-private:
-    ICalculatableUPtr l;
-    ICalculatableUPtr r;
-};
-
-class Minus : public ICalculatable {
-public:
-    Minus(ICalculatableUPtr left, ICalculatableUPtr right) {
-        l.swap(left);
-        r.swap(right);
-    };
-
-    //~Minus() = default;
-
-    double Calculate() const override {
-        return r->Calculate() - l->Calculate();
-    }
-
-private:
-    ICalculatableUPtr l;
-    ICalculatableUPtr r;
-};
-
-class Divide : public ICalculatable {
-public:
-    Divide(ICalculatableUPtr left, ICalculatableUPtr right) {
-        l.swap(left);
-        r.swap(right);
-    };
-
-    //~Divide() = default;
-
-    double Calculate() const override {
-        return r->Calculate() / l->Calculate();
-    };
-
-private:
-    ICalculatableUPtr l;
-    ICalculatableUPtr r;
-};
-
-class Floor : public ICalculatable {
-public:
-    explicit Floor(ICalculatableUPtr child) {
-        r.swap(child);
-    }
-
-    //~Floor() = default;
-
-    double Calculate() const override {
-        return floor(r->Calculate());
-    };
-
-private:
-    ICalculatableUPtr r;
-};
-
-class Round : public ICalculatable {
-public:
-    explicit Round(ICalculatableUPtr child) {
-        r.swap(child);
-    };
-
-    //~Round() = default;
-
-    double Calculate() const override {
-        return round(r->Calculate());
-    }
-
-private:
-    ICalculatableUPtr r;
-};
-
-class Num : public ICalculatable {
-public:
-    explicit Num(double data) : data_(data) {};
-
-    //~Num() = default;
-
-    double Calculate() const override {
-        return data_;
-    }
-
-private:
-    double data_;
-};
-
-ICalculatableUPtr buildTree(std::string &postfix) {
+ICalculatableUPtr buildTree(std::string const &postfix) {
 
     std::stack<ICalculatableUPtr> stack;
 
@@ -241,13 +115,15 @@ ICalculatableUPtr buildTree(std::string &postfix) {
     return std::move(stack.top());
 }
 
-int main(int argc, char *argv[]) {
-    std::string postfix = infixToPostfix(argv[1]);
-    auto x = buildTree(postfix);
+bool expresionValidate(std::string const &postfix, bool (*isOperation)(std::string const &)) {
+    std::istringstream strStream(postfix);
+    std::string token;
 
-    std::cout << x->Calculate() << std::endl;
+    bool isCorrect = true;
+    while (isCorrect && std::getline(strStream, token, ' ')) {
+        if (!(isDouble(token) || isOperation(token)))
+            isCorrect = false;
+    }
 
-    return 0;
+    return isCorrect;
 }
-
-
