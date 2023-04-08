@@ -32,3 +32,5 @@
 *.app
 
 .idea
+datasets
+cmake-build-debug
