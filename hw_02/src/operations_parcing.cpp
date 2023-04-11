@@ -4,9 +4,13 @@
 #include "operations_parsing.h"
 
 bool isDouble(std::string const &s) {
-    std::istringstream iss(s);
-    double d;
-    return iss >> d >> std::ws && iss.eof();
+    try {
+        size_t idx = 0;
+        std::stod(s, &idx);
+        return idx == s.size();
+    } catch (...) {
+        return false;
+    }
 }
 
 bool isOperation(std::string const &s) {
