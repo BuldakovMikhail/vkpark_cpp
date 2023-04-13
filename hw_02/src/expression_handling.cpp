@@ -1,6 +1,7 @@
 #include <iostream>
 #include <stack>
 #include <queue>
+#include <unordered_map>
 
 #include <sstream>
 
@@ -10,8 +11,7 @@
 
 #include "expression_handling.h"
 
-std::string infixToPostfix(std::string const &infix, bool (*isOperation)(std::string const &),
-                           bool (*isPriorityGreater)(std::string const &, std::string const &)) {
+std::string infixToPostfix(std::string const &infix, const std::unordered_map<std::string, int> &operations) {
     std::string postfix;
 
     std::istringstream strStream(infix);
@@ -23,13 +23,14 @@ std::string infixToPostfix(std::string const &infix, bool (*isOperation)(std::st
     while (std::getline(strStream, token, ' ')) {
         if (isDouble(token)) {
             queue.push(token);
-        } else if (isOperation(token)) {
+        } else if (isOperation(token, operations)) {
             if (stack.empty() || stack.top() == "(")
                 stack.push(token);
-            else if (isPriorityGreater(token, stack.top()))
+            else if (isPriorityGreater(token, stack.top(), operations))
                 stack.push(token);
             else {
-                while (!stack.empty() && stack.top() != "(" && !isPriorityGreater(token, stack.top())) {
+                while (!stack.empty() && stack.top() != "(" &&
+                       !isPriorityGreater(token, stack.top(), operations)) {
                     queue.push(stack.top());
                     stack.pop();
                 }
@@ -62,7 +63,7 @@ std::string infixToPostfix(std::string const &infix, bool (*isOperation)(std::st
     return postfix;
 }
 
-ICalculatableUPtr buildTree(std::string const &postfix) {
+ICalculatableUPtr buildTree(std::string const &postfix, const std::unordered_map<std::string, int> &operations) {
 
     std::stack<ICalculatableUPtr> stack;
 
@@ -70,8 +71,8 @@ ICalculatableUPtr buildTree(std::string const &postfix) {
     std::string token;
 
     while (std::getline(strStream, token, ' ')) {
-        if (isOperation(token)) {
-            
+        if (isOperation(token, operations)) {
+
             auto x = std::move(stack.top());
             stack.pop();
 
@@ -106,13 +107,13 @@ ICalculatableUPtr buildTree(std::string const &postfix) {
     return std::move(stack.top());
 }
 
-bool expresionValidate(std::string const &postfix, bool (*isOperation)(std::string const &)) {
+bool expresionValidate(std::string const &postfix, const std::unordered_map<std::string, int> &operations) {
     std::istringstream strStream(postfix);
     std::string token;
 
     bool isCorrect = true;
     while (isCorrect && std::getline(strStream, token, ' ')) {
-        if (!(isDouble(token) || isOperation(token)))
+        if (!(isDouble(token) || isOperation(token, operations)))
             isCorrect = false;
     }
 

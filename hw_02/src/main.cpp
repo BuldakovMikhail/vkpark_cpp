@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 #include "expression_handling.h"
 #include "operations_parsing.h"
@@ -10,18 +11,20 @@ int main(int argc, char *argv[]) {
         return -1;
     }
 
-    std::string postfix = infixToPostfix(argv[1], isOperation, isPriorityGreater);
+    auto map = getOperations();
 
-    if (postfix.empty() || !expresionValidate(postfix, isOperation)) {
+    std::string postfix = infixToPostfix(argv[1], map);
+
+    if (postfix.empty() || !expresionValidate(postfix, map)) {
         std::cerr << "Введено неверное выражение" << std::endl;
         return -1;
     }
 
-    auto x = buildTree(postfix);
+    auto x = buildTree(postfix, map);
 
     try {
         std::cout << x->Calculate() << std::endl;
-    } catch (std::exception &e) {
+    } catch (const std::exception &e) {
         std::cerr << e.what() << std::endl;
         return -1;
     }

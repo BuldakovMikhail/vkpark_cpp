@@ -6,11 +6,10 @@
 #ifndef __EXPRESSION_HANDLING_H__
 #define __EXPRESSION_HANDLING_H__
 
-std::string infixToPostfix(std::string const &infix, bool (*isOperation)(std::string const &),
-                           bool (*isPriorityGreater)(std::string const &, std::string const &));
+std::string infixToPostfix(std::string const &infix, const std::unordered_map<std::string, int> &operations);
 
-ICalculatableUPtr buildTree(std::string const &postfix);
+ICalculatableUPtr buildTree(std::string const &postfix, const std::unordered_map<std::string, int> &operations);
 
-bool expresionValidate(std::string const &postfix, bool (*isOperation)(std::string const &));
+bool expresionValidate(std::string const &postfix, const std::unordered_map<std::string, int> &operations);
 
 #endif //HW_02_EXPRESSION_HANDLING_H

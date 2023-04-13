@@ -1,9 +1,18 @@
 #include <iostream>
-#include <sstream>
 
 #include "operations_parsing.h"
 
-bool isDouble(std::string const &s) {
+std::unordered_map<std::string, int> getOperations() {
+    std::unordered_map<std::string, int> ops = {{"+",     0},
+                                                {"-",     0},
+                                                {"round", 1},
+                                                {"floor", 1},
+                                                {"/",     2}};
+
+    return ops;
+}
+
+bool isDouble(const std::string &s) {
     if (s.empty())
         return false;
 
@@ -13,18 +22,10 @@ bool isDouble(std::string const &s) {
     return *end == '\0';
 }
 
-bool isOperation(std::string const &s) {
-    if (s == "+" || s == "-" || s == "/" || s == "round" || s == "floor")
-        return true;
-
-    return false;
+bool isOperation(const std::string &s, const std::unordered_map<std::string, int> &map) {
+    return map.find(s) != map.end();
 }
 
-bool isPriorityGreater(std::string const &l, std::string const &r) {
-    if (l == "/" and r != "/")
-        return true;
-    else if ((l == "round" || l == "floor") && (r == "+" || r == "-"))
-        return true;
-
-    return false;
+bool isPriorityGreater(const std::string &l, const std::string &r, const std::unordered_map<std::string, int> &map) {
+    return map.at(l) > map.at(r);
 }
