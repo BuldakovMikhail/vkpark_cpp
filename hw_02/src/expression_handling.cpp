@@ -11,7 +11,7 @@
 
 #include "expression_handling.h"
 
-std::string infixToPostfix(std::string const &infix, const std::unordered_map<std::string, int> &operations) {
+std::string infixToPostfix(const std::string &infix, const std::unordered_map<std::string, int> &operations) {
     std::string postfix;
 
     std::istringstream strStream(infix);
@@ -63,7 +63,7 @@ std::string infixToPostfix(std::string const &infix, const std::unordered_map<st
     return postfix;
 }
 
-ICalculatableUPtr buildTree(std::string const &postfix, const std::unordered_map<std::string, int> &operations) {
+ICalculatableUPtr buildTree(const std::string &postfix, const std::unordered_map<std::string, int> &operations) {
 
     std::stack<ICalculatableUPtr> stack;
 
@@ -107,7 +107,7 @@ ICalculatableUPtr buildTree(std::string const &postfix, const std::unordered_map
     return std::move(stack.top());
 }
 
-bool expresionValidate(std::string const &postfix, const std::unordered_map<std::string, int> &operations) {
+bool expresionValidate(const std::string &postfix, const std::unordered_map<std::string, int> &operations) {
     std::istringstream strStream(postfix);
     std::string token;
 
