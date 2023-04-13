@@ -22,6 +22,11 @@ int main(int argc, char *argv[]) {
 
     auto x = buildTree(postfix, map);
 
+    if (!x) {
+        std::cerr << "Ошибка в данных" << std::endl;
+        return -1;
+    }
+
     try {
         std::cout << x->Calculate() << std::endl;
     } catch (const std::exception &e) {

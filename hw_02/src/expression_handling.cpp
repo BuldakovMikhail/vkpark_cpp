@@ -100,7 +100,7 @@ ICalculatableUPtr buildTree(const std::string &postfix, const std::unordered_map
             try {
                 double c = std::stod(token);
                 stack.push(std::unique_ptr<ICalculatable>(new Num(c)));
-            } catch (...) { break; }
+            } catch (const std::exception &e) { return nullptr; }
         }
     }
 
