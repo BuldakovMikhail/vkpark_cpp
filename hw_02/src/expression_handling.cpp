@@ -23,19 +23,19 @@ std::string infixToPostfix(const std::string &infix, const std::unordered_map<st
     while (std::getline(strStream, token, ' ')) {
         if (isDouble(token)) {
             queue.push(token);
+
         } else if (isOperation(token, operations)) {
-            if (stack.empty() || stack.top() == "(")
-                stack.push(token);
-            else if (isPriorityGreater(token, stack.top(), operations))
-                stack.push(token);
-            else {
+            if (!(stack.empty() ||
+                  stack.top() == "(" ||
+                  isPriorityGreater(token, stack.top(), operations))) {
+
                 while (!stack.empty() && stack.top() != "(" &&
                        !isPriorityGreater(token, stack.top(), operations)) {
                     queue.push(stack.top());
                     stack.pop();
                 }
-                stack.push(token);
             }
+            stack.push(token);
 
         } else if (token == "(") {
             stack.push(token);
