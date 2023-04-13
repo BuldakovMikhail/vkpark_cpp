@@ -4,13 +4,13 @@
 #include "operations_parsing.h"
 
 bool isDouble(std::string const &s) {
-    try {
-        size_t idx = 0;
-        std::stod(s, &idx);
-        return idx == s.size();
-    } catch (...) {
+    if (s.empty())
         return false;
-    }
+
+    char *end;
+    strtod(s.c_str(), &end);
+
+    return *end == '\0';
 }
 
 bool isOperation(std::string const &s) {

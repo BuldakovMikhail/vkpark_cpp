@@ -71,44 +71,35 @@ ICalculatableUPtr buildTree(std::string const &postfix) {
 
     while (std::getline(strStream, token, ' ')) {
         if (isOperation(token)) {
-            if (token == "+") {
-                auto x = std::move(stack.top());
-                stack.pop();
+            
+            auto x = std::move(stack.top());
+            stack.pop();
 
+            if (token == "+") {
                 auto y = std::move(stack.top());
                 stack.pop();
 
                 stack.push(std::unique_ptr<ICalculatable>(new Plus(std::move(x), std::move(y))));
             } else if (token == "-") {
-                auto x = std::move(stack.top());
-                stack.pop();
-
                 auto y = std::move(stack.top());
                 stack.pop();
 
                 stack.push(std::unique_ptr<ICalculatable>(new Minus(std::move(x), std::move(y))));
             } else if (token == "/") {
-                auto x = std::move(stack.top());
-                stack.pop();
-
                 auto y = std::move(stack.top());
                 stack.pop();
 
                 stack.push(std::unique_ptr<ICalculatable>(new Divide(std::move(x), std::move(y))));
             } else if (token == "round") {
-                auto x = std::move(stack.top());
-                stack.pop();
-
                 stack.push(std::unique_ptr<ICalculatable>(new Round(std::move(x))));
             } else if (token == "floor") {
-                auto x = std::move(stack.top());
-                stack.pop();
-
                 stack.push(std::unique_ptr<ICalculatable>(new Floor(std::move(x))));
             }
         } else {
-            double c = std::stod(token);
-            stack.push(std::unique_ptr<ICalculatable>(new Num(c)));
+            try {
+                double c = std::stod(token);
+                stack.push(std::unique_ptr<ICalculatable>(new Num(c)));
+            } catch (...) { break; }
         }
     }
 
